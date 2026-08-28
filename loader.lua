@@ -1,4 +1,4 @@
-local url = "https://raw.githubusercontent.com/Saersa/ExploitingGuest_ScriptHub/main/Final_Scripts"
+local url = "https://raw.githubusercontent.com/Doran342545345/Kronos/refs/heads/main/Games"
 
 local games = {
 	[90568084448279] = "One_Tap"; -- GameID, script name
