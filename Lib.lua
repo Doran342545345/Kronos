@@ -711,18 +711,35 @@ end
 return h
 end
 
-function b.Apply(h,i,j)
-local k=b.Get(i)
-local l=j or 0.2
+b.roots={}
+b._paint=nil
 
-
-if b._onApply then
-b._onApply(k,l)
-end
-return k
+function b.RegisterRoot(h)
+table.insert(b.roots,h)
 end
 
-b._onApply=nil
+function b.UnregisterRoot(h)
+local i=table.find(b.roots,h)
+if i then
+table.remove(b.roots,i)
+end
+end
+
+function b.Apply(h,i)
+local j=b.Get(h)
+local k=i or 0.2
+
+
+
+if b._paint then
+for l,m in ipairs(b.roots)do
+if m and m.Parent then
+pcall(b._paint,m,j,k)
+end
+end
+end
+return j
+end
 
 
 local h={}
@@ -1204,6 +1221,32 @@ e.roundRect=roundRect
 
 
 
+
+
+
+
+function e.ResolveColor(f)
+if typeof(f)=="Color3"then
+return f,nil,nil
+end
+if type(f)=="table"then
+if f.kind=="gradient"and f.sequence and f.sequence[1]then
+return f.sequence[1].Value,nil,f
+end
+if f[0]~=nil or f["0"]~=nil then
+local g=c.Gradient.new(f,f.rotation)
+return g.sequence[1].Value,nil,g
+end
+if f.r~=nil then
+return Color3.new(f.r,f.g,f.b),f.a
+end
+end
+return nil,nil,nil
+end
+
+
+
+
 function e.Frame(f,g)
 g=g or{}
 local h=Instance.new"Frame"
@@ -1211,8 +1254,21 @@ h.Name=g.name or"KronosFrame"
 h.Size=g.size or UDim2.fromScale(1,1)
 h.Position=g.position or UDim2.fromOffset(0,0)
 h.AnchorPoint=g.anchor or Vector2.new(0,0)
-h.BackgroundTransparency=g.transparency or 0
-h.BackgroundColor3=g.color or c.Resolver.resolveColor(c.Get"Dark","window","foreground")
+local i,j,k
+if g.color~=nil then
+i,j,k=e.ResolveColor(g.color)
+else
+i=c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"window","foreground")
+end
+h.BackgroundColor3=i or Color3.new(1,1,1)
+h.BackgroundTransparency=g.transparency or j or 0
+if k then
+local l=Instance.new"UIGradient"
+l.Color=c.Gradient.toSequence(k)
+l.Rotation=k.rotation or 90
+l.Parent=h
+h.BackgroundTransparency=0
+end
 h.BorderSizePixel=0
 h.ClipsDescendants=g.clips==nil and true or g.clips
 if g.zIndex then
@@ -1250,7 +1306,7 @@ h.AnchorPoint=g.anchor or Vector2.new(0,0)
 h.BackgroundTransparency=1
 h.BorderSizePixel=0
 h.Text=g.text or""
-h.TextColor3=g.color or c.Resolver.resolveColor(c.Get"Dark","text","label")
+h.TextColor3=g.color~=nil and e.ResolveColor(g.color)or c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"text","label")
 h.TextTransparency=g.textTransparency or 0
 h.Font=g.font or Enum.Font.Code
 if g.enumFont then
@@ -1285,10 +1341,17 @@ h.Name=g.name or"KronosButton"
 h.Size=g.size or UDim2.fromScale(1,1)
 h.Position=g.position or UDim2.fromOffset(0,0)
 h.AnchorPoint=g.anchor or Vector2.new(0,0)
-h.BackgroundTransparency=g.transparency or 0
 h.BorderSizePixel=0
+local i,j
+if g.color~=nil then
+i,j=e.ResolveColor(g.color)
+else
+i=c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"window","foreground")
+end
+h.BackgroundColor3=i or Color3.new(1,1,1)
+h.BackgroundTransparency=g.transparency or j or 0
 h.Text=g.text or""
-h.TextColor3=g.color or c.Resolver.resolveColor(c.Get"Dark","text","button")
+h.TextColor3=c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"text","button")
 h.TextTransparency=g.textTransparency or 0
 h.Font=g.font or Enum.Font.Code
 h.TextSize=g.textSize or 14
@@ -1305,13 +1368,13 @@ bindTheme(h,g.block,g.key or"element")
 end
 
 if g.hover then
-local i=h.BackgroundColor3
-local j=g.hover
+local k=h.BackgroundColor3
+local l=e.ResolveColor(g.hover)or k
 h.MouseEnter:Connect(function()
-b.tween(h,TweenInfo.new(0.1),{BackgroundColor3=j})
+b.tween(h,TweenInfo.new(0.1),{BackgroundColor3=l})
 end)
 h.MouseLeave:Connect(function()
-b.tween(h,TweenInfo.new(0.1),{BackgroundColor3=i})
+b.tween(h,TweenInfo.new(0.1),{BackgroundColor3=k})
 end)
 end
 if g.visible==false then
@@ -1352,14 +1415,16 @@ h.Size=g.size or UDim2.fromScale(1,1)
 h.Position=g.position or UDim2.fromOffset(0,0)
 h.AnchorPoint=g.anchor or Vector2.new(0,0)
 h.BackgroundTransparency=g.transparency or 1
-h.BackgroundColor3=g.color
+h.BackgroundColor3=g.color~=nil and(e.ResolveColor(g.color)or Color3.new(1,1,1))or Color3.new(1,1,1)
 h.BorderSizePixel=0
 h.ScrollBarThickness=g.thickness or 4
 h.ScrollBarTransparency=g.barTransparency or 0.8
 h.CanvasSize=g.canvasSize or UDim2.fromScale(1,1)
 h.AutomaticCanvasSize=g.auto or Enum.AutomaticSize.Y
 h.ScrollingDirection=g.direction or Enum.ScrollingDirection.Y
-h.ScrollBarImageColor3=g.barImage or c.Resolver.resolveColor(c.Get"Dark","scroll","color")
+h.ScrollBarImageColor3=g.barImage~=nil
+and(e.ResolveColor(g.barImage)or c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"scroll","color"))
+or c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"scroll","color")
 if g.zIndex then
 h.ZIndex=g.zIndex
 end
@@ -1380,7 +1445,7 @@ local i=d.nameToGlyph(h)
 if g.imageId and not g.forceGlyph then
 local j=Instance.new"ImageLabel"
 j.Image=g.imageId
-j.ImageColor3=g.color or c.Resolver.resolveColor(c.Get"Dark","chromium","topbarIcon")
+j.ImageColor3=g.color~=nil and e.ResolveColor(g.color)or c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"chromium","topbarIcon")
 j.Size=g.size or UDim2.fromOffset(14,14)
 j.BackgroundTransparency=1
 j.Parent=f
@@ -1391,7 +1456,7 @@ name=g.name or"Icon",
 size=g.size or UDim2.fromOffset(14,14),
 textSize=g.textSize or 12,
 text=i or"",
-color=g.color or c.Resolver.resolveColor(c.Get"Dark","chromium","topbarIcon"),
+color=g.color~=nil and e.ResolveColor(g.color)or c.Resolver.resolveColor(c.Get(c.currentName or"Dark"),"chromium","topbarIcon"),
 x=Enum.TextXAlignment.Center,
 y=Enum.TextYAlignment.Center,
 })
@@ -2599,6 +2664,11 @@ return d.Get(d.currentName or"Dark")
 end
 
 
+local function tokenColor(j)
+return c.ResolveColor(j)or Color3.new(1,1,1)
+end
+
+
 
 
 
@@ -2640,7 +2710,7 @@ key="element",
 })
 c.roundRect(o,6)
 if m=="default"then
-o.BackgroundColor3=theme().window.element
+o.BackgroundColor3=tokenColor(theme().window.element)
 o.BackgroundTransparency=0
 end
 
@@ -2675,9 +2745,9 @@ function q._setLocked(r,s)
 p=s
 if s then
 o.BackgroundTransparency=0
-o.BackgroundColor3=theme().status.disabled
+o.BackgroundColor3=tokenColor(theme().status.disabled)
 else
-o.BackgroundColor3=m=="primary"and theme().accent.color or theme().window.element
+o.BackgroundColor3=tokenColor(m=="primary"and theme().accent.color or theme().window.element)
 end
 end
 
@@ -2729,10 +2799,10 @@ c.roundRect(r,9)
 local function setKnob(t)
 if t then
 e.tween(r,TweenInfo.new(0.15,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Position=UDim2.fromOffset(24,2)})
-e.tween(q,TweenInfo.new(0.15),{BackgroundColor3=theme().accent.color})
+e.tween(q,TweenInfo.new(0.15),{BackgroundColor3=tokenColor(theme().accent.color)})
 else
 e.tween(r,TweenInfo.new(0.15,Enum.EasingStyle.Quad,Enum.EasingDirection.Out),{Position=UDim2.fromOffset(2,2)})
-e.tween(q,TweenInfo.new(0.15),{BackgroundColor3=theme().window.carry2})
+e.tween(q,TweenInfo.new(0.15),{BackgroundColor3=tokenColor(theme().window.carry2)})
 end
 end
 setKnob(p:Get())
@@ -2794,9 +2864,9 @@ setKnob(u)
 elseif s then
 s:FindFirstChild"Check".Visible=u
 if u then
-e.tween(s,TweenInfo.new(0.1),{BackgroundColor3=theme().accent.color})
+e.tween(s,TweenInfo.new(0.1),{BackgroundColor3=tokenColor(theme().accent.color)})
 else
-e.tween(s,TweenInfo.new(0.1),{BackgroundColor3=theme().window.carry2})
+e.tween(s,TweenInfo.new(0.1),{BackgroundColor3=tokenColor(theme().window.carry2)})
 end
 end
 if k.callback then
@@ -3183,7 +3253,7 @@ local C=type(A)=="table"
 if C and A.divider then
 local D=c.Frame(v,{size=UDim2.new(1,-16,0,1),position=UDim2.fromOffset(8,0),transparency=1})
 local E=Instance.new"UIStroke"
-E.Color=theme().stroke.window
+E.Color=tokenColor(theme().stroke.window)
 E.Transparency=0.85
 E.Thickness=1
 E.Parent=D
@@ -3327,11 +3397,11 @@ p.BackgroundTransparency=1
 p.BorderSizePixel=0
 p.Text=k.default or k.value or""
 p.PlaceholderText=k.placeholder or""
-p.TextColor3=theme().text.input
+p.TextColor3=tokenColor(theme().text.input)
 p.TextTransparency=0
 p.Font=Enum.Font.Code
 p.TextSize=13
-p.PlaceholderColor3=theme().text.desc
+p.PlaceholderColor3=tokenColor(theme().text.desc)
 p.ClearTextOnFocus=k.clearOnFocus==true or k.clearTextOnFocus==true
 p.TextXAlignment=Enum.TextXAlignment.Left
 p.Parent=o
@@ -3450,7 +3520,7 @@ w.Position=UDim2.new(0,30,0,0)
 w.BackgroundTransparency=1
 w.BorderSizePixel=0
 w.Text=tostring(o)..s
-w.TextColor3=theme().text.input
+w.TextColor3=tokenColor(theme().text.input)
 w.Font=Enum.Font.Code
 w.TextSize=13
 w.TextXAlignment=Enum.TextXAlignment.Center
@@ -3557,7 +3627,7 @@ p.MultiLine=true
 p.TextWrapped=true
 p.Text=k.default or k.value or""
 p.PlaceholderText=k.placeholder or"Type here..."
-p.TextColor3=theme().text.input
+p.TextColor3=tokenColor(theme().text.input)
 p.Font=Enum.Font.Code
 p.TextSize=13
 p.TextXAlignment=Enum.TextXAlignment.Left
@@ -3975,7 +4045,7 @@ position=k.direction=="vertical"and UDim2.new(0.5,0,0.5,0)or nil,
 transparency=1,
 })
 local n=Instance.new"UIStroke"
-n.Color=theme().stroke.window
+n.Color=tokenColor(theme().stroke.window)
 n.Transparency=0.9
 n.Thickness=2
 n.Parent=m
@@ -4098,10 +4168,10 @@ o.Name="Code"
 o.Size=UDim2.new(1,0,0,k.height-50)
 o.Position=UDim2.fromOffset(0,26)
 o.BackgroundTransparency=0
-o.BackgroundColor3=theme().window.carry
+o.BackgroundColor3=tokenColor(theme().window.carry)
 o.BorderSizePixel=0
 o.Text=k.code or""
-o.TextColor3=theme().text.input
+o.TextColor3=tokenColor(theme().text.input)
 o.Font=Enum.Font.Code
 o.TextSize=12
 o.TextXAlignment=Enum.TextXAlignment.Left
@@ -4904,17 +4974,18 @@ w.Name="Search"
 w.Size=UDim2.new(1,-20,0,26)
 w.Position=UDim2.fromOffset(10,62)
 w.BackgroundTransparency=0
-w.BackgroundColor3=o.window.sidebarItem
+w.BackgroundColor3=c.ResolveColor(o.window.sidebarItem)or Color3.new(1,1,1)
 w.BorderSizePixel=0
 w.PlaceholderText="Search..."
-w.PlaceholderColor3=o.text.subtile
-w.TextColor3=o.text.window
+w.PlaceholderColor3=c.ResolveColor(o.text.subtile)or Color3.new(1,1,1)
+w.TextColor3=c.ResolveColor(o.text.window)or Color3.new(1,1,1)
 w.Font=Enum.Font.Code
 w.TextSize=13
 w.TextXAlignment=Enum.TextXAlignment.Left
 w.Text=""
 w.Parent=u
 c.roundRect(w,8)
+c.bindTheme(w,"window","sidebarItem")
 m.searchBox=w
 end
 
@@ -4978,6 +5049,9 @@ A.Visible=false
 end
 
 m.XPContent=nil
+
+
+d.RegisterRoot(m.Root)
 end
 
 function l.buildDefaultButtons(m,n)
@@ -5197,8 +5271,8 @@ for o,q in ipairs(m.tabs)do
 q.Root.Visible=q==n
 if q.Button then
 local r=theme()
-q.Button.BackgroundColor3=q==n and r.window.sidebarItem or r.window.sidebar
-q.Button.TextColor3=q==n and r.text.window or r.text.subtile
+q.Button.BackgroundColor3=c.ResolveColor(q==n and r.window.sidebarItem or r.window.sidebar)or Color3.new(1,1,1)
+q.Button.TextColor3=c.ResolveColor(q==n and r.text.window or r.text.subtile)or Color3.new(1,1,1)
 end
 end
 m.currentTab=n
@@ -5414,7 +5488,7 @@ function y.SelectTab(z,A)
 for B,C in ipairs(y.Tabs)do
 C.Root.Visible=C==A
 if C.Button then
-C.Button.BackgroundColor3=C==A and r.accent.color or(r.window.card or r.window.foreground)
+C.Button.BackgroundColor3=c.ResolveColor(C==A and r.accent.color or(r.window.card or r.window.foreground))or Color3.new(1,1,1)
 end
 end
 end
@@ -6029,7 +6103,7 @@ btn=s,
 }
 s.MouseButton1Click:Connect(function()
 t=not t
-s.BackgroundColor3=t and q.accent.color or q.window.carry2
+s.BackgroundColor3=c.ResolveColor(t and q.accent.color or q.window.carry2)or Color3.new(1,1,1)
 table.insert(n.globalSettings,n.globalSettings[#n.globalSettings])
 if o.callback then
 pcall(o.callback,t)
@@ -6038,7 +6112,7 @@ end)
 return{
 Set=function(u,v)
 t=v
-s.BackgroundColor3=v and q.accent.color or q.window.carry2
+s.BackgroundColor3=c.ResolveColor(v and q.accent.color or q.window.carry2)or Color3.new(1,1,1)
 if o.callback then
 pcall(o.callback,v)
 end
@@ -6122,6 +6196,9 @@ return r
 end
 
 function l.Destroy(n)
+if n.Root then
+d.UnregisterRoot(n.Root)
+end
 if n.drag then
 n.drag:DestroyDrag()
 end
@@ -6285,110 +6362,115 @@ return c end function a.o():typeof(__modImpl())local b=a.cache.o if not b then b
 
 
 
-local b=a.a()a.e()
-
-local c=a.c()
-local d=a.b()
-local e=a.n()
-local f=a.i()
-local g=a.l()
-local h=a.m()
-local i=a.o()
-local j=a.h()
-
-local k={}
-k.VERSION="1.0.0"
-k.Name="Kronos"
-
-
-
+local b=a.a()
+local c=a.e()
+local d=a.c()
+local e=a.b()
+local f=a.n()
+local g=a.i()
+local h=a.l()
+local i=a.m()
+local j=a.o()
+local k=a.h()
 
 local l={}
+l.VERSION="1.0.0"
+l.Name="Kronos"
 
-function k.CreateWindow(m,n)
-n=n or{}
-local o=n.Icon or n.screen
-if not o then
-local q=b.getgenv()
-if q and q.gethui then
-local r,s=pcall(q.gethui)
-if r and s then
-o=s
-end
-end
-end
-if not o then
-o=gethui and gethui()or game:GetService"CoreGui"
-end
 
-local q=e.new(o,n)
-table.insert(l,q)
-return q
-end
-
-function k.GetWindows(m)
-return l
+d._paint=function(m,n,o)
+c.applyTheme(m,n,o)
 end
 
 
 
 
-function k.Notify(m,n)
-if#l>0 then
-return l[#l]:Notify(n)
+local m={}
+
+function l.CreateWindow(n,o)
+o=o or{}
+local q=o.Icon or o.screen
+if not q then
+local r=b.getgenv()
+if r and r.gethui then
+local s,t=pcall(r.gethui)
+if s and t then
+q=t
 end
-return nil
+end
+end
+if not q then
+q=gethui and gethui()or game:GetService"CoreGui"
 end
 
-function k.Dialog(m,n)
-if#l>0 then
-return l[#l]:Dialog(n)
-end
-return nil
+local r=f.new(q,o)
+table.insert(m,r)
+return r
 end
 
-function k.Splash(m,n)
-if#l>0 then
-return l[#l]:Splash(n)
+function l.GetWindows(n)
+return m
+end
+
+
+
+
+function l.Notify(n,o)
+if#m>0 then
+return m[#m]:Notify(o)
 end
 return nil
 end
 
+function l.Dialog(n,o)
+if#m>0 then
+return m[#m]:Dialog(o)
+end
+return nil
+end
+
+function l.Splash(n,o)
+if#m>0 then
+return m[#m]:Splash(o)
+end
+return nil
+end
 
 
 
-function k.AddTheme(m,n,o)
-c.Add(n,o)
+
+function l.AddTheme(n,o,q)
+d.Add(o,q)
 return true
 end
 
-function k.SetTheme(m,n)
-return c.Apply(n)
+function l.SetTheme(n,o)
+return d.Apply(o)
 end
 
-function k.GetTheme(m)
-return c.currentName
+function l.GetTheme(n)
+return d.currentName
 end
 
-function k.GetThemeList(m)
-return c.List()
+function l.GetThemeList(n)
+return d.List()
 end
 
 
 
 
-k.Config=h
-k.ConfigManager=h.ConfigManager
-k.Keys=i
-k.I18n=j
+l.Config=i
+l.ConfigManager=i.ConfigManager
+l.Keys=j
+l.I18n=k
 
-k.Services={
-Keys=i,
-I18n=j,
+l.Services={
+Keys=j,
+I18n=k,
 }
 
 
-k.UI={
+l.UI={
 GetScale=b.getScale,
 IsDesktop=b.isDesktop,
 SecureMode=b.SecureMode,
@@ -6396,36 +6478,36 @@ ZeroAsset=b.zeroAsset,
 }
 
 
-k.Value=d.Value
-k.Batch=d.Batch
+l.Value=e.Value
+l.Batch=e.Batch
 
 
-k.Registry=f
-k.Elements=g
+l.Registry=g
+l.Elements=h
 
-function k.Log(m,n,o)
-local q="[Kronos] "
-if o=="warn"then
-q=q.."[warn] "
-elseif o=="error"then
-q=q.."[error] "
+function l.Log(n,o,q)
+local r="[Kronos] "
+if q=="warn"then
+r=r.."[warn] "
+elseif q=="error"then
+r=r.."[error] "
 end
-q=q..tostring(n)
+r=r..tostring(o)
 if b.isStudio then
-warn(q)
+warn(r)
 else
-print(q)
+print(r)
 end
 end
 
 
-function k.Unload(m)
-for n,o in ipairs(l)do
+function l.Unload(n)
+for o,q in ipairs(m)do
 pcall(function()
-o:destroy()
+q:destroy()
 end)
 end
-l={}
+m={}
 end
 
-return k
+return l
