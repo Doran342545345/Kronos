@@ -1,4 +1,3 @@
--- vind ui by s_e6 on discord
 -- KronosUI edition: element locking + chat-relay patches (see docs/kronos/changes.md)
 local TweenService      = game:GetService("TweenService")
 local Players           = game:GetService("Players")
@@ -472,7 +471,7 @@ local function LoadCustomFigtree()
 	local okFolder = EnsureAssetsFolder()
 	if not okFolder then return nil end
 
-	local base = "https://raw.githubusercontent.com/Skinny-yz/KronosUI-Assets/main/fonts/"
+	local base = "https://raw.githubusercontent.com/Doran342545345/Kronos/main/Assets/fonts/"
 	local semiPath = ASSETS_FOLDER .. "/Figtree-SemiBold.ttf"
 	local regPath  = ASSETS_FOLDER .. "/Figtree-Medium.ttf"
 
@@ -715,11 +714,11 @@ local function MeasureText(text, size, maxWidth)
 end
 
 local IconSources = {
-	Material = "https://raw.githubusercontent.com/Skinny-yz/KronosUI-Assets/main/icons/MaterialIcons.luau",
-	Lucide   = "https://raw.githubusercontent.com/Skinny-yz/KronosUI-Assets/main/icons/LucideIcons.luau",
-	Phosphor = "https://raw.githubusercontent.com/Skinny-yz/KronosUI-Assets/main/icons/Phosphor.luau",
-	["Phosphor-Filled"] = "https://raw.githubusercontent.com/Skinny-yz/KronosUI-Assets/main/icons/Phosphor%20Filled.luau",
-	SF       = "https://raw.githubusercontent.com/Skinny-yz/KronosUI-Assets/main/icons/SFSymbols.luau",
+	Material = "https://raw.githubusercontent.com/Doran342545345/Kronos/main/Assets/icons/MaterialIcons.luau",
+	Lucide   = "https://raw.githubusercontent.com/Doran342545345/Kronos/main/Assets/icons/LucideIcons.luau",
+	Phosphor = "https://raw.githubusercontent.com/Doran342545345/Kronos/main/Assets/icons/Phosphor.luau",
+	["Phosphor-Filled"] = "https://raw.githubusercontent.com/Doran342545345/Kronos/main/Assets/icons/Phosphor%20Filled.luau",
+	SF       = "https://raw.githubusercontent.com/Doran342545345/Kronos/main/Assets/icons/SFSymbols.luau",
 }
 
 local IconCache = {}
